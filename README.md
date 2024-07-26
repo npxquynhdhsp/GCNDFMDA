@@ -23,4 +23,5 @@ GCNDFMDA: Predict miRNA-disease associations using a variant of deep forest mode
      - nloop = ```number of repeat times```
      - Defaut: 5fold-CV in HMDD v2.0 dataset)
   * Unzip OUT.rar
+  * Run ```main.py```
   
