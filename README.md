@@ -22,4 +22,5 @@ GCNDFMDA: Predict miRNA-disease associations using a variant of deep forest mode
      - type_eval = "KFOLD"  / "DIS_K" / "DENO_MI", respectively to 5-fold-CV, Case studies and Denovo miRNAs.
      - nloop = ```number of repeat times```
      - Defaut: 5fold-CV in HMDD v2.0 dataset)
+  * Unzip OUT.rar
   
