@@ -11,7 +11,7 @@ GCNDFMDA: Predict miRNA-disease associations using a variant of deep forest mode
   * scipy==1.9.3
   * scikit-learn==1.2.2
   * numpy==1.22.4
-  * torch_geometric==2.3.1
+  * torch-geometric==2.3.1
   * xlrd==1.2.0
   * openpyxl==3.1.4
 
