@@ -168,41 +168,13 @@ def main():
             calculate_score([y_test], [y_prob_df])
             prob_set_df.append(y_prob_df)
 
-            if args.db == 'HMDD v2.0':
-                ## If the model you use cost too much memory for you.
-                ## You can use these methods to force gcforest not keeping model in memory
-                ## gc.set_keep_model_in_mem(False), default is TRUE.
-                gc.set_keep_model_in_mem(False)
-
-                ###---------------------------------------------
-                ## You can try passing X_enc to another classifier on top of gcForest.e.g. xgboost/RF.
-                ## X_enc is the concatenated predict_proba result of each estimators of the last layer of the GCForest model
-                X_train_enc = X_train_enc.reshape((X_train_enc.shape[0], -1))
-                X_test_enc = gc.transform(X_test)
-                X_test_enc = X_test_enc.reshape((X_test_enc.shape[0], -1))
-                X_train_origin = X_train.reshape((X_train.shape[0], -1))
-                X_test_origin = X_test.reshape((X_test.shape[0], -1))
-                X_train_enc = np.hstack((X_train_origin, X_train_enc))
-                X_test_enc = np.hstack((X_test_origin, X_test_enc))
-                print("X_train_enc.shape={}, X_test_enc.shape={}".format(X_train_enc.shape, X_test_enc.shape))
-                # eg. X_test_enc.shape = (37917,100+2*4), 4 for 4 classifier
-
-                # Q
-                method_set = ['RF', 'ETR', 'LR', 'XG']  # ['DF', 'ETR', 'LR', 'XG']
-                prob_set_rf.append(models_eval(method_set[0], X_train_enc, X_test_enc, y_train, y_test, ix, loop_i))  # (1)
-                prob_set_etr.append(models_eval(method_set[1], X_train_enc, X_test_enc, y_train, y_test, ix, loop_i))  # (2)
-                prob_set_lr.append(models_eval(method_set[2], X_train_enc, X_test_enc, y_train, y_test, ix, loop_i))  # (3)
-                prob_set_xg.append(models_eval(method_set[3], X_train_enc, X_test_enc, y_train, y_test, ix, loop_i))  # (4)
+            #QX
 
     #QX
 
     print('--------------------------------FINAL MEAN ALL:-------------------------------')
     save_eval('DF', true_set, prob_set_df)
-    if args.db == 'HMDD v2.0':
-        save_eval(method_set[0], true_set, prob_set_rf)  # Q
-        save_eval(method_set[1], true_set, prob_set_etr)
-        save_eval(method_set[2], true_set, prob_set_lr)
-        save_eval(method_set[3], true_set, prob_set_xg)
+    # QX
 
 
 # %%
