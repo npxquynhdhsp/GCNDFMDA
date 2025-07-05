@@ -49,34 +49,7 @@ def get_config():
     return config
 
 
-def models_eval(method_set_name, X_train_enc, X_test_enc, y_train, y_test, ix, loop_i):
-    if method_set_name == 'RF':
-        print('Random Forest')
-        from sklearn.ensemble import RandomForestClassifier
-        clf = RandomForestClassifier(n_estimators=args.rf_ne, max_depth=None, n_jobs=-1)
-    elif method_set_name == 'ETR':
-        print('Extra trees regression')
-        from sklearn.ensemble import ExtraTreesRegressor
-        clf = ExtraTreesRegressor(n_estimators=args.etr_ne, n_jobs=-1)
-    elif method_set_name == 'LR':
-        print('Linear regression')
-        from sklearn.linear_model import LinearRegression
-        clf = LinearRegression()
-    else:
-        print('XGBoost')
-        from xgboost import XGBClassifier
-        clf = XGBClassifier(booster='gbtree', n_jobs=2, learning_rate=args.xg_lrr, n_estimators=args.xg_ne)
-
-    clf.fit(X_train_enc, y_train)
-
-    if (method_set_name == 'ETR') or (method_set_name == 'LR'):
-        y_prob = clf.predict(X_test_enc)
-    else:
-        y_prob = clf.predict_proba(X_test_enc)[:,1]
-
-    np.savetxt(args.fi_out + 'L' + str(loop_i) + '_yprob_' + method_set_name.lower() + str(ix) + '.csv', y_prob)
-    calculate_score([y_test], [y_prob])
-    return y_prob
+#QX
 
 
 def save_eval(method_set_name, true_set, prob_set):
