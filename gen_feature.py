@@ -56,8 +56,8 @@ class model_feature(nn.Module):
 
         mmf = self.linear_mi_func(mm_f2)
         mmg = self.linear_mi_gip(mm_g2)
-        dds = self.linear_mi_func(dd_s2)
-        ddg = self.linear_mi_gip(dd_g2)
+        dds = self.linear_dis_sem(dd_s2)
+        ddg = self.linear_dis_gip(dd_g2)
         MW = torch.tensor(mmf > 0, dtype=torch.int)
         DW = torch.tensor(dds > 0, dtype=torch.int)
         mi_fea = MW * mmf + (1 - MW) * mmg
