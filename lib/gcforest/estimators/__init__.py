@@ -18,10 +18,13 @@ def get_estimator_class(est_type):
         return GCRandomForestClassifier
     if est_type == "LogisticRegression":
         return GCLR
+        
     if est_type == "SGDClassifier":
         return GCSGDClassifier
     if est_type == "XGBClassifier":
         return GCXGBClassifier
+    else: 
+        return GCLR
     #if est_type == "XGBClassifier":
     #    return GCXGBClassifier
     raise ValueError('Unkown Estimator Type, est_type={}'.format(est_type))
