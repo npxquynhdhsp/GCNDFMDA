@@ -116,7 +116,7 @@ def main():
             print('read_tr_te_adj', args.read_tr_te_adj)
         elif args.type_eval == 'DIS_K':
             # set_ix = args.dis_set
-            set_ix = np.genfromtxt(args.fi_A + 'dis_set2.csv').astype(int).T
+            set_ix = np.genfromtxt(args.fi_A + 'dis_set.csv').astype(int).T
             temp = 'DIS '
         else:
             mi_set = np.genfromtxt(args.fi_A + 'mi_setT.csv').astype(int).T[40:]#Q
