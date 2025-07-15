@@ -5,12 +5,12 @@ from params import args
 from utils.dataprocessing import gen_dataset, make_adj
 import torch
 import numpy as np
-
+import torch.nn.functional as F
 #%%
 torch.backends.cudnn.enabled = False
 
 #%%
-class model_feature(nn.Module):
+class model_feature(nn.Module): #elu
     def __init__(self, args):
         super(model_feature, self).__init__()
         self.gcn1_mi_func = GCNConv(args.em_mi, args.em_mi)
@@ -23,7 +23,7 @@ class model_feature(nn.Module):
         self.gcn2_dis_sem = GCNConv(args.em_dis, args.em_dis)
         self.gcn2_dis_gip = GCNConv(args.em_dis, args.em_dis)
 
-        self.linear_mi_func = nn.Linear(args.em_mi, args.out_mi_dim) #Q fai khop 256 in va out
+        self.linear_mi_func = nn.Linear(args.em_mi, args.out_mi_dim)
         self.linear_mi_gip = nn.Linear(args.em_mi, args.out_mi_dim)
 
         self.linear_dis_sem = nn.Linear(args.em_dis, args.out_dis_dim)
@@ -34,30 +34,31 @@ class model_feature(nn.Module):
         mm0 = torch.randn((args.mi_num, args.em_mi))
         dd0 = torch.randn((args.dis_num, args.em_dis))
 
-        mm_f1 = torch.relu(self.gcn1_mi_func(mm0, data['mm_func']['edges'], data['mm_func']['data_matrix'][
+        mm_f1 = F.elu(self.gcn1_mi_func(mm0, data['mm_func']['edges'], data['mm_func']['data_matrix'][
             data['mm_func']['edges'][0], data['mm_func']['edges'][1]]))
-        mm_f2 = torch.relu(self.gcn2_mi_func(mm_f1, data['mm_func']['edges'], data['mm_func']['data_matrix'][
+        mm_f2 = F.elu(self.gcn2_mi_func(mm_f1, data['mm_func']['edges'], data['mm_func']['data_matrix'][
             data['mm_func']['edges'][0], data['mm_func']['edges'][1]]))
 
-        mm_g1 = torch.relu(self.gcn1_mi_gip(mm0, data['mm_gip']['edges'], data['mm_gip']['data_matrix'][
+        mm_g1 = F.elu(self.gcn1_mi_gip(mm0, data['mm_gip']['edges'], data['mm_gip']['data_matrix'][
             data['mm_gip']['edges'][0], data['mm_gip']['edges'][1]]))
-        mm_g2 = torch.relu(self.gcn2_mi_gip(mm_g1, data['mm_gip']['edges'], data['mm_gip']['data_matrix'][
+        mm_g2 = F.elu(self.gcn2_mi_gip(mm_g1, data['mm_gip']['edges'], data['mm_gip']['data_matrix'][
             data['mm_gip']['edges'][0], data['mm_gip']['edges'][1]]))
 
-        dd_s1 = torch.relu(self.gcn1_dis_sem(dd0, data['dd_sema']['edges'], data['dd_sema']['data_matrix'][
+        dd_s1 = F.elu(self.gcn1_dis_sem(dd0, data['dd_sema']['edges'], data['dd_sema']['data_matrix'][
             data['dd_sema']['edges'][0], data['dd_sema']['edges'][1]]))
-        dd_s2 = torch.relu(self.gcn2_dis_sem(dd_s1, data['dd_sema']['edges'], data['dd_sema']['data_matrix'][
+        dd_s2 = F.elu(self.gcn2_dis_sem(dd_s1, data['dd_sema']['edges'], data['dd_sema']['data_matrix'][
             data['dd_sema']['edges'][0], data['dd_sema']['edges'][1]]))
 
-        dd_g1 = torch.relu(self.gcn1_dis_gip(dd0, data['dd_gip']['edges'], data['dd_gip']['data_matrix'][
+        dd_g1 = F.elu(self.gcn1_dis_gip(dd0, data['dd_gip']['edges'], data['dd_gip']['data_matrix'][
             data['dd_gip']['edges'][0], data['dd_gip']['edges'][1]]))
-        dd_g2 = torch.relu(self.gcn2_dis_gip(dd_g1, data['dd_gip']['edges'], data['dd_gip']['data_matrix'][
+        dd_g2 = F.elu(self.gcn2_dis_gip(dd_g1, data['dd_gip']['edges'], data['dd_gip']['data_matrix'][
             data['dd_gip']['edges'][0], data['dd_gip']['edges'][1]]))
 
         mmf = self.linear_mi_func(mm_f2)
         mmg = self.linear_mi_gip(mm_g2)
         dds = self.linear_dis_sem(dd_s2)
         ddg = self.linear_dis_gip(dd_g2)
+
         MW = torch.tensor(mmf > 0, dtype=torch.int)
         DW = torch.tensor(dds > 0, dtype=torch.int)
         mi_fea = MW * mmf + (1 - MW) * mmg
@@ -71,14 +72,16 @@ def train(model, train_data, optimizer, opt):
         model.zero_grad()
         score, mi_fea, dis_fea = model(train_data)
         print('epoch ', epoch)
-        loss = torch.nn.MSELoss(reduction='mean')
+        ## loss = torch.nn.MSELoss(reduction='mean')
+        loss = torch.nn.BCEWithLogitsLoss()
         loss = loss(score, train_data['md_p'])
         loss.backward()
         optimizer.step()
         # print(loss.item())
+    score = torch.sigmoid(score)
     score = score.detach().cpu().numpy()
-    scoremin, scoremax = score.min(), score.max()
-    score = (score - scoremin) / (scoremax - scoremin)
+    ## scoremin, scoremax = score.min(), score.max()
+    ## score = (score - scoremin) / (scoremax - scoremin)
     return score, mi_fea, dis_fea
 
 # %%

@@ -2,7 +2,8 @@
 from lib.gcforest.gcforest import GCForest
 from params import args
 from gen_feature import gen_feature
-from utils.dataprocessing_CB import *
+from utils.dataprocessing import *
+from utils.dataprocessing_CB import split_kfold_CBTr
 from utils.dataprocessing2 import *
 from utils.utils import *
 import numpy as np
@@ -21,11 +22,11 @@ def get_config():
 
     ca_config["estimators"].append(
         {"n_folds": nfold,
-         "type": "LogisticRegression"})
+         "type": "LinearRegression"})
 
     ca_config["estimators"].append(
         {"n_folds": nfold,
-         "type": "LogisticRegression"})
+         "type": "LinearRegression"})
 
     ca_config["estimators"].append(
         {"type": "XGBClassifier",
@@ -49,7 +50,34 @@ def get_config():
     return config
 
 
-#QX
+def models_eval(method_set_name, X_train_enc, X_test_enc, y_train, y_test, ix, loop_i):
+    if method_set_name == 'RF':
+        print('Random Forest')
+        from sklearn.ensemble import RandomForestClassifier
+        clf = RandomForestClassifier(n_estimators=args.rf_ne, max_depth=None, n_jobs=-1)
+    elif method_set_name == 'ETR':
+        print('Extra trees regression')
+        from sklearn.ensemble import ExtraTreesRegressor
+        clf = ExtraTreesRegressor(n_estimators=args.etr_ne, n_jobs=-1)
+    elif method_set_name == 'LR':
+        print('Linear regression')
+        from sklearn.linear_model import LinearRegression
+        clf = LinearRegression()
+    else:
+        print('XGBoost')
+        from xgboost import XGBClassifier
+        clf = XGBClassifier(booster='gbtree', n_jobs=2, learning_rate=args.xg_lrr, n_estimators=args.xg_ne)
+
+    clf.fit(X_train_enc, y_train)
+
+    if (method_set_name == 'ETR') or (method_set_name == 'LR'):
+        y_prob = clf.predict(X_test_enc)
+    else:
+        y_prob = clf.predict_proba(X_test_enc)[:,1]
+
+    np.savetxt(args.fi_out + 'L' + str(loop_i) + '_yprob_' + method_set_name.lower() + str(ix) + '.csv', y_prob)
+    calculate_score([y_test], [y_prob])
+    return y_prob
 
 
 def save_eval(method_set_name, true_set, prob_set):
@@ -64,6 +92,16 @@ def save_eval(method_set_name, true_set, prob_set):
 
         #QX
     return
+
+def save_eval2_all(method_set_name, true_set, prob_set):
+    print(method_set_name,':')
+    prob_set_join = np.concatenate(prob_set, axis = 0) # join
+    np.savetxt(args.fi_out + 'prob_set' + method_set_name.lower() + '.csv', prob_set_join)
+
+    true_set_join = np.concatenate(true_set, axis = 0)
+    np.savetxt(args.fi_out + 'true_set.csv', true_set_join, fmt='%d')
+    calculate_score([true_set_join], [prob_set_join])
+    
 def main():
     #QX
 
@@ -77,10 +115,11 @@ def main():
             temp = 'FOLD '
             print('read_tr_te_adj', args.read_tr_te_adj)
         elif args.type_eval == 'DIS_K':
-            set_ix = args.dis_set
+            # set_ix = args.dis_set
+            set_ix = np.genfromtxt(args.fi_A + 'dis_set2.csv').astype(int).T
             temp = 'DIS '
         else:
-            mi_set = np.genfromtxt(args.fi_A + 'mi_setT.csv').astype(int).T #Q
+            mi_set = np.genfromtxt(args.fi_A + 'mi_setT.csv').astype(int).T[40:]#Q
             set_ix = mi_set
             temp = 'MIRNA '
     else:
@@ -94,8 +133,9 @@ def main():
         print('.......................................... LOOP ', loop_i,'.........................................')
         if (args.db != 'INDE_TEST') and (args.type_eval == 'KFOLD'):
             idx_pair_train_set, idx_pair_test_set, y_train_set, y_test_set, train_adj_set = \
-                split_kfold_CBTr(args.fi_A, args.fi_proc, 'adj_MD.csv', \
-                        '_CB', args.type_test,1,  loop_i)
+            split_kfold_CBTr(args.fi_A, args.fi_proc, 'adj_MD.csv', \
+                    '_CB', args.type_test,1,  loop_i)
+        print('.')
 
         for ix in set_ix:
             ###-----------------------
@@ -119,7 +159,7 @@ def main():
                                         '_CB', args.type_test, 1, ix, loop_i)
 
             np.savetxt(args.fi_out + 'L' + str(loop_i) + '_ytrue' + \
-                       str(ix) + '.csv', y_test, fmt='%d') #Q read kfold dup, cho chac ca lo bi xao
+                       str(ix) + '.csv', y_test, fmt='%d')
             ###-----------------------
             if args.db != 'INDE_TEST':
                 print(temp, ix, '*' * 50)
@@ -131,8 +171,7 @@ def main():
             X_test = X_test[:, np.newaxis, :]  # @QS
 
             gc = GCForest(config) #QT
-
-            X_train_enc = gc.fit_transform(X_train, y_train) #Qcmt
+            X_train_enc = gc.fit_transform(X_train, y_train)  # Qcmt k duoc xoa
             print(X_test.shape)  # ex (37917,1,256*2)
             # print('X_train_enc_df.shape', X_train_enc.shape)  # ex (151668, 2*|classifier|)
 
@@ -145,10 +184,12 @@ def main():
             print("Finish! ", time.time() - bg_time, "s")
             # QX
 
-        print('--------------------------------FINAL MEAN ALL:-------------------------------')
-        save_eval('DF', true_set, prob_set_df)
-        # QX
-        # print("Running time: ", time.time() - bg_time, "s")
+        print('--------------------------------FINAL:-------------------------------')
+        if (args.db != 'INDE_TEST') or (args.type_eval == 'KFOLD'):
+            save_eval2_all('df', true_set, prob_set_df)
+        else:
+            save_eval('df', true_set, prob_set_df)
+        
 # %%
 if __name__ == "__main__":
     print('fi_ori_feature', args.fi_ori_feature)
