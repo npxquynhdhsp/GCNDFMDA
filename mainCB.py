@@ -185,10 +185,13 @@ def main():
             # QX
 
         print('--------------------------------FINAL:-------------------------------')
-        if (args.type_eval == 'DIS_K':
-            save_eval('df', true_set, prob_set_df)
+        if args.db == "INDE_TEST":
+            save_eval2_all(method_set_name, true_set, prob_set)
         else:
-            save_eval2_all('df', true_set, prob_set_df)
+            if args.type_eval == "DENO_MI":
+                save_eval2_all(method_set_name, true_set, prob_set)
+            else:
+                save_eval(method_set_name, true_set, prob_set)
             
         
 # %%
