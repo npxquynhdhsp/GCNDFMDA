@@ -185,10 +185,10 @@ def main():
             # QX
 
         print('--------------------------------FINAL:-------------------------------')
-        if (args.db == 'DIS_K':
-            save_eval_all('df', true_set, prob_set_df)
+        if (args.type_eval == 'DIS_K':
+            save_eval('df', true_set, prob_set_df)
         else:
-            save_eval2('df', true_set, prob_set_df)
+            save_eval2_all('df', true_set, prob_set_df)
             
         
 # %%
